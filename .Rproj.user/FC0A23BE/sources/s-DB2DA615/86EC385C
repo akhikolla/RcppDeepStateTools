@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1600815429408.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "233555029",
+    "id" : "86EC385C",
+    "lastKnownWriteTime" : 1600826633,
+    "last_content_update" : 1600826633,
+    "path" : "~/R/RcppDeepStateTools/R/deepstate_compile_tools.R",
+    "project_path" : "R/deepstate_compile_tools.R",
+    "properties" : {
+        "cursorPosition" : "20,0",
+        "scrollLine" : "4"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

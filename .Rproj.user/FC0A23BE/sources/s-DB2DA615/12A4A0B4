@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1600822995004.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "12A4A0B4",
+    "lastKnownWriteTime" : 1600866708,
+    "last_content_update" : 1600866708780,
+    "path" : "~/R/RcppDeepStateTools/R/deepstate_compile_AFL.R",
+    "project_path" : "R/deepstate_compile_AFL.R",
+    "properties" : {
+        "cursorPosition" : "5,2",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
