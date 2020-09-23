@@ -9,12 +9,12 @@ deepstate_compile_tools<-function(path){
     if((file.exists("~/.RcppDeepState/deepstate-master/build/libdeepstate32.a") &&
          file.exists("~/.RcppDeepState/deepstate-master/build/libdeepstate.a"))){
       if(!file.exists("~/.RcppDeepState/deepstate-master/build_afl/libdeepstate_AFL.a")){
-        #deepstate_make_afl()
+        deepstate_make_afl()
       }
       }
     else{
-        #RcppDeepState::deepstate_make_run()
-        #deepstate_make_afl()
+        RcppDeepState::deepstate_make_run()
+        deepstate_make_afl()
     }
     if(file.exists("~/.RcppDeepState/deepstate-master/build_afl/libdeepstate_AFL.a")){
       inst_path <- file.path(path, "inst")
@@ -31,7 +31,9 @@ deepstate_compile_tools<-function(path){
             object <- gsub(".cpp$",".o",harness.path)
            makefile_lines <- readLines(makefile.path,warn=FALSE)
            makefile_lines <- gsub("clang++","$(CXX)",makefile_lines,fixed=TRUE)
-           makefile_lines <- gsub("R_HOME=","export AFL_HOME=/home/akhila/deepstate/docker/afl-2.52b\nCXX = ${AFL_HOME}/afl-clang++\nR_HOME=",makefile_lines,fixed=TRUE)
+           makefile_lines <- gsub("-ldeepstate","-ldeepstate_AFL",makefile_lines,fixed=TRUE)
+           makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_afl",makefile_lines,fixed=TRUE)
+           makefile_lines <- gsub("R_HOME=","export AFL_HOME=~/.RcppDeepState/afl-2.52b\\nCXX = ${AFL_HOME}/afl-clang++\nR_HOME=",makefile_lines,fixed=TRUE)
            makefile_lines <- gsub(paste0("./",executable),paste0("./",executable,".afl"),makefile_lines,fixed=TRUE)
           makefile.afl <- file.path(dirname(makefile.path),"AFL.Makefile")
         file.create(makefile.afl,recursive=TRUE)
@@ -40,7 +42,7 @@ deepstate_compile_tools<-function(path){
         file.remove(executable)
         compile_line <-paste0("rm -f *.o && make -f ",makefile.afl)
         print(compile_line)
-        #system(compile_line)
+        system(compile_line)
       }
     }
   }else if(option == 2){
