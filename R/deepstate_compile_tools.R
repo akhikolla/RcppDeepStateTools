@@ -3,10 +3,10 @@
 ##' @export
 deepstate_compile_tools<-function(path){
   path <- normalizePath(path,mustWork=TRUE)
-  option=readline(prompt="Please choose an option to select the Fuzzer:\n1 - AFL\n2 - LibFuzzer\n3 - Eclipser\n4 - Angora\n5 - HonggFuzz")
-  insts.path <- "~"
-  insts.path <- normalizePath(insts.path,mustWork=TRUE)
-  deepstate.path <- paste0(insts.path,"/.RcppDeepState")
+  option=readline(prompt="Please choose an option to select the Fuzzer:\n1 - AFL\n2 - LibFuzzer\n3 - Eclipser\n4 - HonggFuzz")
+  insts.path <- normalizePath("~",mustWork=TRUE)
+  deepstate <- paste0(insts.path,"/.RcppDeepState")
+  deepstate.path <- file.path(deepstate,"deepstate-master")
   inst_path <- file.path(path, "inst")
   test_path <- file.path(inst_path,"testfiles")
   if(!(file.exists(paste0(insts.path,"/.RcppDeepState/deepstate-master/build/libdeepstate32.a")) &&
@@ -14,7 +14,8 @@ deepstate_compile_tools<-function(path){
     RcppDeepState::deepstate_make_run()
   }
   if(option == 1){
-      if(!file.exists("~/.RcppDeepState/deepstate-master/build_afl/libdeepstate_AFL.a")){
+      AFL.a <- file.path(deepstate.path,"build_afl/libdeepstate_AFL.a")
+      if(!file.exists(AFL.a)){
         deepstate_make_afl()
       }
       functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
@@ -34,7 +35,9 @@ deepstate_compile_tools<-function(path){
            makefile_lines <- gsub("clang++","$(CXX)",makefile_lines,fixed=TRUE)
            makefile_lines <- gsub("-ldeepstate","-ldeepstate_AFL",makefile_lines,fixed=TRUE)
            makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_afl",makefile_lines,fixed=TRUE)
-           makefile_lines <- gsub("R_HOME=","export AFL_HOME=~/afl-2.52b\nCXX = ${AFL_HOME}/afl-clang++\nAFL_FUZZ=${AFL_HOME}/afl-fuzz\nR_HOME=",makefile_lines,fixed=TRUE)
+           AFL_HOME = file.path(deepstate,"afl-2.52b")
+           Sys.setenv(AFL_HOME=AFL_HOME)
+           makefile_lines <- gsub("R_HOME=",paste0("export AFL_HOME=",AFL_HOME,"\nCXX=${AFL_HOME}/afl-clang++\nAFL_FUZZ=${AFL_HOME}/afl-fuzz\nR_HOME="),makefile_lines,fixed=TRUE)
            makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
            #makefile_lines <- gsub(object,paste0(object,".afl"),makefile_lines,fixed=TRUE)
            makefile_lines <- gsub(executable,paste0(executable,".afl"),makefile_lines,fixed=TRUE)
@@ -53,9 +56,10 @@ deepstate_compile_tools<-function(path){
       }
     }
   }else if(option == 2){
-    if(!file.exists("~/.RcppDeepState/deepstate-master/build_libfuzzer/libdeepstate_LF.a")){
-      #deepstate_make_libFuzzer()
-      print("lib not exists")
+    LF.a <- file.path(deepstate.path,"build_libfuzzer/libdeepstate_LF.a")
+    if(!file.exists(LF.a)){
+      deepstate_make_libFuzzer()
+      #print("lib not exists")
     }
     functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
     fun_names <- unique(functions.list$funName)
@@ -88,14 +92,14 @@ deepstate_compile_tools<-function(path){
         #file.remove(executable)
         compile_line <-paste0("rm -f *.o && make -f ",makefile.libfuzzer)
         print(compile_line)
-        #system(compile_line)
+        system(compile_line)
       }
     }
 
   }else if(option == 3){
-    if(!file.exists("~/.RcppDeepState/deepstate-master/Eclipser/build/Eclipser.dll")){
+    dll <- file.path(deepstate,"Eclipser/build/Eclipser.dll")
+    if(!file.exists(dll)){
       deepstate_make_eclipser()
-      print("lib not exists")
     }
     functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
     fun_names <- unique(functions.list$funName)
@@ -115,7 +119,7 @@ deepstate_compile_tools<-function(path){
         object <- gsub(".cpp$",".o",harness.path)
         o.logfile <- paste0(function.path,"/",f,"_log")
         makefile_lines <- readLines(makefile.path,warn=FALSE)
-        makefile_lines <- gsub("R_HOME=",paste0("export ECLIPSER_HOME=",insts.path,"/.RcppDeepState/deepstate-master/Eclipser/build\nR_HOME="),makefile_lines,fixed=TRUE)
+        makefile_lines <- gsub("R_HOME=",paste0("export ECLIPSER_HOME=",insts.path,"/.RcppDeepState/Eclipser/build\nR_HOME="),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("--output_test_dir.*> /dev/null","",makefile_lines)
         makefile_lines <- gsub("valgrind.* ./","./",makefile_lines)
@@ -129,11 +133,9 @@ deepstate_compile_tools<-function(path){
       }
   }
 }else if(option == 4){
-    print("Angora")
-  }else if(option == 5){
-      if(!file.exists("~/.RcppDeepState/deepstate-master/build_honggfuzz/libdeepstate_HFUZZ.a")){
-        #deepstate_make__hongg()
-        print("lib not exists")
+      HF.a <- file.path(deepstate.path,"build_honggfuzz/libdeepstate_HFUZZ.a")
+      if(!file.exists(HF.a)){
+        deepstate_make__hongg()
       }
     functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
     fun_names <- unique(functions.list$funName)
@@ -153,7 +155,9 @@ deepstate_compile_tools<-function(path){
         makefile_lines <- gsub("clang++","$(CXX)",makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("-ldeepstate","-ldeepstate_HFUZZ",makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_honggfuzz",makefile_lines,fixed=TRUE)
-        makefile_lines <- gsub("R_HOME=","export HONGGFUZZ_HOME=~/.RcppDeepState/deepstate-master/build_honggfuzz/honggfuzz/\nCXX = ${HONGGFUZZ_HOME}/hfuzz_cc/hfuzz-clang++\nHONGG_FUZZ=${HONGGFUZZ_HOME}/honggfuzz \nR_HOME=",makefile_lines,fixed=TRUE)
+        HONGGFUZZ_HOME = file.path(deepstate,"honggfuzz")
+        Sys.setenv(HONGGFUZZ_HOME=HONGGFUZZ_HOME)
+        makefile_lines <- gsub("R_HOME=",paste0("export HONGGFUZZ_HOME=",HONGGFUZZ_HOME,"\nCXX = ${HONGGFUZZ_HOME}/hfuzz_cc/hfuzz-clang++\nHONGG_FUZZ=${HONGGFUZZ_HOME}/honggfuzz \nR_HOME="),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(executable,paste0(executable,".hongg"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(paste0("./",basename(executable)," --fuzz"),paste0("${HONGGFUZZ_HOME}/honggfuzz -t 2000 -i ",input_dir," -o ",output_dir," -x -- ",executable,".hongg"," ___FILE___"),makefile_lines,fixed=TRUE)
@@ -171,5 +175,8 @@ deepstate_compile_tools<-function(path){
         system(compile_line)
       }
     }
+}
+  else if(option == 5){
+    print("Angora")
   }
 }
