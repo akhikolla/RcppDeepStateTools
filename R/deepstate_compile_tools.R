@@ -77,7 +77,7 @@ deepstate_compile_tools<-function(path){
         makefile_lines <- gsub(paste0("clang++ -g -o",executable),paste0("clang++ -g -o",executable,"_LF"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("clang++ -g","clang++ -g -fsanitize=address,fuzzer",makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("-ldeepstate","-ldeepstate -ldeepstate_LF",makefile_lines,fixed=TRUE)
-        makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_LF",makefile_lines,fixed=TRUE)
+        makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_libfuzzer",makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(executable,paste0(executable,"_LF"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(paste0("./",basename(executable)," --fuzz"),paste0("./",basename(executable),"_LF"," --fuzz"),makefile_lines,fixed=TRUE)

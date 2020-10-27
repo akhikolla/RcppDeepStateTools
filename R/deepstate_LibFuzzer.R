@@ -7,4 +7,5 @@ deepstate_make_libFuzzer <- function(){
   build_libfuzzer <- file.path(master,"build_libfuzzer")
   dir.create(build_libfuzzer,showWarnings = FALSE)
   system(paste0("cd ", build_libfuzzer," ; ","CXX=clang++ CC=clang cmake -DDEEPSTATE_LIBFUZZER=ON ../"," ; ", "make -j4"))
-}
+  system(paste0("cd ",build_libfuzzer," sudo cp ./libdeepstate_LF.a /usr/local/lib/"))
+  }
