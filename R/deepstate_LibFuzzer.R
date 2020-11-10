@@ -48,7 +48,7 @@ deepstate_pkg_create_LibFuzzer<-function(path){
       #file.remove(executable)
       compile_line <-paste0("rm -f *.o && make -f ",makefile.libfuzzer)
       print(compile_line)
-      system(compile_line)
+      #system(compile_line)
     }
   }
 

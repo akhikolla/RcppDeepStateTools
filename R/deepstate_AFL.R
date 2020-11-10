@@ -10,16 +10,20 @@ deepstate_pkg_create_AFL<-function(path){
   test_path <- file.path(inst_path,"testfiles")
   if(!(file.exists(file.path(insts.path,".RcppDeepState/deepstate-master/build/libdeepstate32.a")) &&
        file.exists(file.path(insts.path,".RcppDeepState/deepstate-master/build/libdeepstate.a")))){
-    RcppDeepState::deepstate_make_run()
+    #RcppDeepState::deepstate_make_run()
   }
   AFL.a <- file.path(deepstate.path,"build_afl/libdeepstate_AFL.a")
     if(!file.exists(AFL.a)){
-      deepstate_make_afl()
+      #deepstate_make_afl()
     }
     functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
     fun_names <- unique(functions.list$funName)
     for(f in fun_names){
       function.path <- file.path(test_path,f)
+      afl.fun.path <- file.path(test_path,f,paste0("AFL_",f))
+      if(!dir.exists(afl.fun.path)){
+        dir.create(afl.fun.path)
+      }
       harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
       makefile.path <- file.path(function.path,"Makefile")
       if(file.exists(harness.path) && file.exists(makefile.path) ){
@@ -28,6 +32,22 @@ deepstate_pkg_create_AFL<-function(path){
         o.logfile <- paste0(function.path,"/",f,"_log")
         logfile <-  paste0(function.path,"/afl_",f,"_log")
         output_dir <- paste0(function.path,"/afl_",f,"_output")
+        #writing harness file
+        harness_lines <- readLines(harness.path,warn=FALSE)
+
+        harness_lines <- gsub("#include <fstream>","#include <fstream>\n#include <ctime>",harness_lines,fixed=TRUE)
+        harness_lines <- gsub("RInside R;","RInside R;\n  std::time_t t = std::time(0);",harness_lines,fixed=TRUE)
+        k <- nc::capture_all_str(harness_lines,
+                            "qs::c_qsave","\\(",
+                            save=".*",",\"",l=".*","\"")
+        for(i in seq_along(k$l)){
+        harness_lines <- gsub(paste0("\"",k$l[i],"\""),paste0(gsub(".qs","",basename(k$l[i])),"_t"),harness_lines,fixed=TRUE)
+        harness_lines <- gsub(paste0("qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),paste0("std::string ",gsub(".qs","",basename(k$l[i])),"_t = ","\"",dirname(dirname(k$l[i])),
+        "/afl_inputs/ \" + std::to_string(t) + \"_",basename(k$l[i]),"\"",";\n  qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),harness_lines,fixed=TRUE)
+       }
+        harness.afl <- file.path(afl.fun.path,basename(harness.path))
+        file.create(harness.afl,recursive=TRUE)
+        cat(harness_lines, file=harness.afl, sep="\n")
         makefile_lines <- readLines(makefile.path,warn=FALSE)
         makefile_lines <- gsub(paste0("clang++ -g -o",executable),paste0("clang++ -g -o",executable,".afl"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("clang++","$(CXX)",makefile_lines,fixed=TRUE)
@@ -38,21 +58,21 @@ deepstate_pkg_create_AFL<-function(path){
         input_dir <- file.path(function.path,"inputs")
         makefile_lines <- gsub("R_HOME=",paste0("export AFL_HOME=",AFL_HOME,"\nCXX=${AFL_HOME}/afl-clang++\nAFL_FUZZ=${AFL_HOME}/afl-fuzz\nR_HOME="),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
-        #makefile_lines <- gsub(object,paste0(object,".afl"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(executable,paste0(executable,".afl"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(paste0("./",basename(executable)," --fuzz"),paste0("${AFL_HOME}/afl-fuzz -o ",output_dir," -m 150 -t 2000 -i ", input_dir," -- ",executable,".afl"),makefile_lines,fixed=TRUE)
         makefile_lines <- gsub("--output_test_dir.*> /dev/null","",makefile_lines)
         makefile_lines <- gsub(".afl.cpp",".cpp",makefile_lines,fixed=TRUE)
         makefile_lines <- gsub(paste0("./",executable),paste0("./",executable,".afl"),makefile_lines,fixed=TRUE)
-        makefile.afl <- file.path(dirname(makefile.path),"AFL.Makefile")
+        makefile.afl <- file.path(afl.fun.path,"Makefile")
         file.create(makefile.afl,recursive=TRUE)
         cat(makefile_lines, file=makefile.afl, sep="\n")
         #file.remove(object)
         #file.remove(executable)
-        compile_line <-paste0("rm -f *.o && make -f ",makefile.afl)
+        compile_line <-paste0("rm -f *.o && make")
         print(compile_line)
-        system(compile_line)
+        #system(compile_line)
         #deepstate_fuzz_fun(function.path)
+
       }
     }
   }
