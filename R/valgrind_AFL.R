@@ -11,7 +11,7 @@ run_AFL<-function(){
   testfiles.vec <- Sys.glob(file.path(pkg.tar.gz,"inst/testfiles/*"))
   cat(sprintf("%4d - %s\n", pkg.i, pkg.tar.gz))
   if(length(testfiles.vec) > 0){
-    #deepstate_pkg_create_AFL(pkg.tar.gz)
+    deepstate_pkg_create_AFL(pkg.tar.gz)
   }
   }
 }
