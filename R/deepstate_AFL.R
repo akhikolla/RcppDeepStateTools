@@ -38,16 +38,14 @@ deepstate_pkg_create_AFL<-function(path){
       #writing harness file
       harness_lines <- readLines(harness.path,warn=FALSE)
       harness_lines <- gsub("#include <fstream>","#include <fstream>\n#include <ctime>",harness_lines,fixed=TRUE)
-      harness_lines <- gsub("RInside R;",paste0("RInside R;\n  std::time_t t = std::time(0);\n  std::string time =", "\"",
-                            input_dir,"/","\""," + std::to_string(t)",";\n  mkdir(time.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)")
-                            ,harness_lines,fixed=TRUE)
+      harness_lines <- gsub("RInside R;","RInside R;\n  std::time_t t = std::time(0);",harness_lines,fixed=TRUE)
       k <- nc::capture_all_str(harness_lines,
                                "qs::c_qsave","\\(",
                                save=".*",",\"",l=".*","\"")
       for(i in seq_along(k$l)){
         harness_lines <- gsub(paste0("\"",k$l[i],"\""),paste0(gsub(".qs","",basename(k$l[i])),"_t"),harness_lines,fixed=TRUE)
         harness_lines <- gsub(paste0("qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),paste0("std::string ",gsub(".qs","",basename(k$l[i])),"_t = ","\"",dirname(dirname(k$l[i])),
-                                                                                            "/",basename(afl.fun.path),"/afl_inputs/ \" + std::to_string(t) + \"/",basename(k$l[i]),"\"",";\n  qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),harness_lines,fixed=TRUE)
+                                                                                            "/",basename(afl.fun.path),"/afl_inputs/\" + std::to_string(t) + \"_",basename(k$l[i]),"\"",";\n  qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),harness_lines,fixed=TRUE)
       }
       print(afl.fun.path)
       ##makefileupdate
