@@ -23,24 +23,24 @@ deepstate_pkg_create_AFL<-function(path){
     function.path <- file.path(test_path,f)
     afl.fun.path <- file.path(test_path,f,paste0("AFL_",f))
     afl.harness.path <- file.path(afl.fun.path,paste0(f,"_DeepState_TestHarness"))
-    if(!dir.exists(afl.fun.path)){
-      dir.create(afl.fun.path)
-    }
+    dir.create(afl.fun.path,showWarnings = FALSE)
     harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
     makefile.path <- file.path(function.path,"Makefile")
     if(file.exists(harness.path) && file.exists(makefile.path) ){
       executable <- gsub(".cpp$","",harness.path)
       object <- gsub(".cpp$",".o",harness.path)
-      o.logfile <- paste0(afl.fun.path,"/",f,"_log")
-      logfile <-  paste0(afl.fun.path,"/afl_",f,"_log")
-      output_dir <- paste0(afl.fun.path,"/afl_",f,"_output")
-      if(!dir.exists(output_dir)){
-        dir.create(output_dir)
-      }
+      o.logfile <- file.path(afl.fun.path,paste0(f,"_log"))
+      logfile <-  file.path(afl.fun.path,paste0("afl_",f,"_log"))
+      output_dir <- file.path(afl.fun.path,paste0("afl_",f,"_output"))
+        dir.create(output_dir,showWarnings = FALSE)
+      input_dir <- file.path(afl.fun.path,"afl_inputs")
+      dir.create(input_dir,showWarnings = FALSE)
       #writing harness file
       harness_lines <- readLines(harness.path,warn=FALSE)
       harness_lines <- gsub("#include <fstream>","#include <fstream>\n#include <ctime>",harness_lines,fixed=TRUE)
-      harness_lines <- gsub("RInside R;","RInside R;\n  std::time_t t = std::time(0);",harness_lines,fixed=TRUE)
+      harness_lines <- gsub("RInside R;",paste0("RInside R;\n  std::time_t t = std::time(0);\n  std::string time =", "\"",
+                            input_dir,"/","\""," + std::to_string(t)",";\n  mkdir(time.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)")
+                            ,harness_lines,fixed=TRUE)
       k <- nc::capture_all_str(harness_lines,
                                "qs::c_qsave","\\(",
                                save=".*",",\"",l=".*","\"")
