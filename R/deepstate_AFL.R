@@ -23,6 +23,7 @@ deepstate_pkg_create_AFL<-function(path){
     function.path <- file.path(test_path,f)
     afl.fun.path <- file.path(test_path,f,paste0("AFL_",f))
     afl.harness.path <- file.path(afl.fun.path,paste0(f,"_DeepState_TestHarness"))
+    unlink(afl.fun.path, recursive=TRUE)
     dir.create(afl.fun.path,showWarnings = FALSE)
     harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
     makefile.path <- file.path(function.path,"Makefile")
