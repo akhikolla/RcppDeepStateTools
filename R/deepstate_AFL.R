@@ -17,6 +17,7 @@ deepstate_pkg_create_AFL<-function(path){
   if(!file.exists(AFL.a)){
     #deepstate_make_afl()
   }
+  exists_flag = 0
   functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
   fun_names <- unique(functions.list$funName)
   for(f in fun_names){
@@ -25,7 +26,10 @@ deepstate_pkg_create_AFL<-function(path){
 
     afl.harness.path <- file.path(afl.fun.path,paste0(f,"_DeepState_TestHarness"))
     #unlink(afl.fun.path, recursive=TRUE)
-    dir.create(afl.fun.path,showWarnings = FALSE)
+    if(!dir.exists(afl.fun.path)){
+      exists_flag = 1
+      dir.create(afl.fun.path,showWarnings = FALSE)
+    }
     harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
     makefile.path <- file.path(function.path,"Makefile")
     if(file.exists(harness.path) && file.exists(makefile.path) ){
@@ -34,9 +38,13 @@ deepstate_pkg_create_AFL<-function(path){
       o.logfile <- file.path(afl.fun.path,paste0(f,"_log"))
       logfile <-  file.path(afl.fun.path,paste0("afl_",f,"_log"))
       output_dir <- file.path(afl.fun.path,paste0("afl_",f,"_output"))
-        dir.create(output_dir,showWarnings = FALSE)
+      if(!dir.exists(output_dir)) {
+       dir.create(output_dir,showWarnings = FALSE)
+      }
       input_dir <- file.path(afl.fun.path,"afl_inputs")
-      dir.create(input_dir,showWarnings = FALSE)
+      if(!dir.exists(output_dir)) {
+        dir.create(input_dir,showWarnings = FALSE)
+      }
       #writing harness file
       harness_lines <- readLines(harness.path,warn=FALSE)
       harness_lines <- gsub("#include <fstream>","#include <fstream>\n#include <ctime>",harness_lines,fixed=TRUE)
@@ -76,13 +84,14 @@ deepstate_pkg_create_AFL<-function(path){
       #file.remove(object)
       #file.remove(executable)
       compile_line <-paste0("cd ",afl.fun.path," && rm -f *.o && make")
-      print(compile_line)
-      system(compile_line)
+
       execution_line <- paste0("cd ",afl.fun.path," && ${AFL_HOME}/afl-fuzz -i ", input_dir," -o ",output_dir," -m 150 -t 2000+ -- ./",basename(executable),
                                " --input_test_file @@ --no_fork")
+      print(compile_line)
       print(execution_line)
-       if(!dir.exists(afl.fun.path)){
-       system(execution_line)
+       if(exists_flag == 1){
+         system(compile_line)
+         system(execution_line)
        }
       #deepstate_fuzz_fun(function.path)
 
