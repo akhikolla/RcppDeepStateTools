@@ -22,8 +22,9 @@ deepstate_pkg_create_AFL<-function(path){
   for(f in fun_names){
     function.path <- file.path(test_path,f)
     afl.fun.path <- file.path(test_path,f,paste0("AFL_",f))
+
     afl.harness.path <- file.path(afl.fun.path,paste0(f,"_DeepState_TestHarness"))
-    unlink(afl.fun.path, recursive=TRUE)
+    #unlink(afl.fun.path, recursive=TRUE)
     dir.create(afl.fun.path,showWarnings = FALSE)
     harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
     makefile.path <- file.path(function.path,"Makefile")
@@ -80,7 +81,9 @@ deepstate_pkg_create_AFL<-function(path){
       execution_line <- paste0("cd ",afl.fun.path," && ${AFL_HOME}/afl-fuzz -i ", input_dir," -o ",output_dir," -m 150 -t 2000+ -- ./",basename(executable),
                                " --input_test_file @@ --no_fork")
       print(execution_line)
-      system(execution_line)
+       if(!dir.exists(afl.fun.path)){
+       system(execution_line)
+       }
       #deepstate_fuzz_fun(function.path)
 
     }
