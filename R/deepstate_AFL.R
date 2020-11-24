@@ -23,7 +23,6 @@ deepstate_pkg_create_AFL<-function(path){
   for(f in fun_names){
     function.path <- file.path(test_path,f)
     afl.fun.path <- file.path(test_path,f,paste0("AFL_",f))
-
     afl.harness.path <- file.path(afl.fun.path,paste0(f,"_DeepState_TestHarness"))
     #unlink(afl.fun.path, recursive=TRUE)
     if(!dir.exists(afl.fun.path)){
@@ -73,16 +72,10 @@ deepstate_pkg_create_AFL<-function(path){
       Sys.setenv(AFL_HOME=AFL_HOME)
       input_dir <- file.path(function.path,"inputs")
       makefile_lines <- gsub("R_HOME=",paste0("export AFL_HOME=",AFL_HOME,"\nCXX=${AFL_HOME}/afl-clang++\nAFL_FUZZ=${AFL_HOME}/afl-fuzz\nR_HOME="),makefile_lines,fixed=TRUE)
-      #makefile_lines <- gsub(executable,paste0(executable,".afl"),makefile_lines,fixed=TRUE)
-      #makefile_lines <- gsub(paste0("./",basename(executable)," --fuzz"),paste0("${AFL_HOME}/afl-fuzz -o ",output_dir," -m 150 -t 2000 -i ", input_dir," -- ",executable,".afl"),makefile_lines,fixed=TRUE)
-      #makefile_lines <- gsub("--output_test_dir.*> /dev/null","",makefile_lines)
       makefile_lines <- gsub(".afl.cpp",".cpp",makefile_lines,fixed=TRUE)
-      #makefile_lines <- gsub(paste0("./",executable),paste0("./",executable,".afl"),makefile_lines,fixed=TRUE)
       makefile.afl <- file.path(afl.fun.path,"Makefile")
       file.create(makefile.afl,recursive=TRUE)
       cat(makefile_lines, file=makefile.afl, sep="\n")
-      #file.remove(object)
-      #file.remove(executable)
       compile_line <-paste0("cd ",afl.fun.path," && rm -f *.o && make")
 
       execution_line <- paste0("cd ",afl.fun.path," && ${AFL_HOME}/afl-fuzz -i ", input_dir," -o ",output_dir," -m 150 -t 2000+ -- ./",basename(executable),
@@ -93,8 +86,6 @@ deepstate_pkg_create_AFL<-function(path){
          system(compile_line)
          system(execution_line)
        }
-      #deepstate_fuzz_fun(function.path)
-
     }
   }
 }
