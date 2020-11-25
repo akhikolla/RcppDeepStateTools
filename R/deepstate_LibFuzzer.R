@@ -20,31 +20,47 @@ deepstate_pkg_create_LibFuzzer<-function(path){
   functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
   fun_names <- unique(functions.list$funName)
   for(f in fun_names){
-    libfuzzer.fun.path <- file.path(test_path,f,paste0("AFL_",f))
-    libfuzzer.fun.path <- file.path(libfuzzer.fun.path,paste0(f,"_DeepState_TestHarness"))
+    libfuzzer.fun.path <- file.path(test_path,f,paste0("libFuzzer_",f))
+    libfuzzer.harness.path <- file.path(libfuzzer.fun.path,paste0(f,"_DeepState_TestHarness"))
+    if(!dir.exists(libfuzzer.fun.path)){
+      exists_flag = 1
+      dir.create(libfuzzer.fun.path,showWarnings = FALSE)
+    }
     function.path <- file.path(test_path,f)
     harness.path <-  file.path(function.path,paste0(f,"_DeepState_TestHarness.cpp"))
     makefile.path <- file.path(function.path,"Makefile")
     if(file.exists(harness.path) && file.exists(makefile.path) ){
       executable <- gsub(".cpp$","",harness.path)
       object <- gsub(".cpp$",".o",harness.path)
-      o.logfile <- paste0(function.path,"/",f,"_log")
-      logfile <-  paste0(function.path,"/libfuzzer_",f,"_log")
-      output_dir <- paste0(function.path,"/libfuzzer_",f,"_output")
+      o.logfile <- file.path(libfuzzer.fun.path,paste0("/",f,"_log"))
+      logfile <-  file.path(libfuzzer.fun.path,paste0("/libfuzzer_",f,"_log"))
+      output_dir <- file.path(libfuzzer.fun.path,paste0("/libfuzzer_",f,"_output"))
+      if(!dir.exists(output_dir)) {
+        dir.create(output_dir,showWarnings = FALSE)
+      }
+      #writing harness file
+      harness_lines <- readLines(harness.path,warn=FALSE)
+      harness_lines <- gsub("RInside R;","static int rinside_flag = 0;\n  if(rinside_flag == 0)\n  {\n    rinside_flag = 1;\n    RInside R;\n  }"
+                            ,harness_lines,fixed=TRUE)
+      harness.libFuzz <- file.path(libfuzzer.fun.path,basename(harness.path))
+      file.create(harness.libFuzz,recursive=TRUE)
+      cat(harness_lines, file=harness.libFuzz, sep="\n")
+
+      ##makefileupdate
       makefile_lines <- readLines(makefile.path,warn=FALSE)
-      makefile_lines <- gsub(paste0("clang++ -g -o",executable),paste0("clang++ -g -o",executable,"_LF"),makefile_lines,fixed=TRUE)
+      makefile_lines <- gsub(function.path,libfuzzer.fun.path,makefile_lines,fixed=TRUE)
       makefile_lines <- gsub("clang++ -g","clang++ -g -fsanitize=address,fuzzer",makefile_lines,fixed=TRUE)
       makefile_lines <- gsub("-ldeepstate","-ldeepstate -ldeepstate_LF",makefile_lines,fixed=TRUE)
       makefile_lines <- gsub("deepstate-master/build","deepstate-master/build_libfuzzer",makefile_lines,fixed=TRUE)
-      makefile_lines <- gsub(o.logfile,logfile,makefile_lines,fixed=TRUE)
-      makefile_lines <- gsub(executable,paste0(executable,"_LF"),makefile_lines,fixed=TRUE)
-      makefile_lines <- gsub(paste0("./",basename(executable)," --fuzz"),paste0("./",basename(executable),"_LF"," --fuzz"),makefile_lines,fixed=TRUE)
-      makefile.libfuzzer <- file.path(dirname(makefile.path),"libfuzz.Makefile")
-      file.create(makefile.libfuzzer,recursive=TRUE)
-      cat(makefile_lines, file=makefile.libfuzzer, sep="\n")
-      compile_line <-paste0("rm -f *.o && make -f ",makefile.libfuzzer)
+      makefile.libFuzz <- file.path(libfuzzer.fun.path,"Makefile")
+      file.create(makefile.libFuzz,recursive=TRUE)
+      cat(makefile_lines, file=makefile.libFuzz, sep="\n")
+      compile_line <-paste0("rm -f *.o && make -f ",makefile.libFuzz)
       print(compile_line)
-      #system(compile_line)
+      system(compile_line)
+      execution_line <- paste0("cd ",libfuzzer.fun.path," && ./",basename(executable))
+      print(execution_line)
+      system(execution_line)
     }
   }
 
@@ -61,4 +77,4 @@ deepstate_make_libFuzzer <- function(){
   dir.create(build_libfuzzer,showWarnings = FALSE)
   system(paste0("cd ", build_libfuzzer," ; ","CXX=clang++ CC=clang cmake -DDEEPSTATE_LIBFUZZER=ON ../"," ; ", "make -j4"))
   system(paste0("cd ",build_libfuzzer," sudo cp ./libdeepstate_LF.a /usr/local/lib/"))
-  }
+}
