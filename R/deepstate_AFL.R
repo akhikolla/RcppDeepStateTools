@@ -41,7 +41,7 @@ deepstate_pkg_create_AFL<-function(path){
        dir.create(output_dir,showWarnings = FALSE)
       }
       input_dir <- file.path(afl.fun.path,"afl_inputs")
-      if(!dir.exists(output_dir)) {
+      if(!dir.exists(input_dir)) {
         dir.create(input_dir,showWarnings = FALSE)
       }
       #writing harness file

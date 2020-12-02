@@ -38,10 +38,23 @@ deepstate_pkg_create_LibFuzzer<-function(path){
       if(!dir.exists(output_dir)) {
         dir.create(output_dir,showWarnings = FALSE)
       }
+      input_dir <- file.path(libfuzzer.fun.path,"libfuzzer_inputs")
+      if(!dir.exists(input_dir)) {
+        dir.create(input_dir,showWarnings = FALSE)
+      }
       #writing harness file
       harness_lines <- readLines(harness.path,warn=FALSE)
-      harness_lines <- gsub("RInside R;","static int rinside_flag = 0;\n  if(rinside_flag == 0)\n  {\n    rinside_flag = 1;\n    RInside R;\n  }"
+      harness_lines <- gsub("RInside R;","static int rinside_flag = 0;\n  if(rinside_flag == 0)\n  {\n    rinside_flag = 1;\n    RInside R;\n  } std::time_t current_timestamp = std::time(0);"
                             ,harness_lines,fixed=TRUE)
+      k <- nc::capture_all_str(harness_lines,
+                               "qs::c_qsave","\\(",
+                               save=".*",",\"",l=".*","\"")
+      for(i in seq_along(k$l)){
+        harness_lines <- gsub(paste0("\"",k$l[i],"\""),paste0(gsub(".qs","",basename(k$l[i])),"_t"),harness_lines,fixed=TRUE)
+        harness_lines <- gsub(paste0("qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),paste0("std::string ",gsub(".qs","",basename(k$l[i])),"_t = ","\"",dirname(dirname(k$l[i])),
+        "/",basename(libfuzzer.fun.path),"/libfuzzer_inputs/\" + std::to_string(current_timestamp) +
+          \"_",basename(k$l[i]),"\"",";\n  qs::c_qsave(",gsub(".qs","",basename(k$l[i]))),harness_lines,fixed=TRUE)
+      }
       harness.libFuzz <- file.path(libfuzzer.fun.path,basename(harness.path))
       file.create(harness.libFuzz,recursive=TRUE)
       cat(harness_lines, file=harness.libFuzz, sep="\n")
