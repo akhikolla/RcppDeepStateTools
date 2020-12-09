@@ -17,11 +17,14 @@ deepstate_pkg_create_LibFuzzer<-function(path){
     deepstate_make_libFuzzer()
     #print("lib not exists")
   }
+  exists_flag = 0
   functions.list  <-  RcppDeepState::deepstate_get_function_body(path)
   fun_names <- unique(functions.list$funName)
   for(f in fun_names){
     libfuzzer.fun.path <- file.path(test_path,f,paste0("libFuzzer_",f))
     libfuzzer.harness.path <- file.path(libfuzzer.fun.path,paste0(f,"_DeepState_TestHarness"))
+    input_dir <- file.path(libfuzzer.fun.path,"libfuzzer_inputs")
+    inputs.list <- Sys.glob(file.path(input_dir,"*"))
     if(!dir.exists(libfuzzer.fun.path)){
       exists_flag = 1
       dir.create(libfuzzer.fun.path,showWarnings = FALSE)
@@ -38,7 +41,7 @@ deepstate_pkg_create_LibFuzzer<-function(path){
       if(!dir.exists(output_dir)) {
         dir.create(output_dir,showWarnings = FALSE)
       }
-      input_dir <- file.path(libfuzzer.fun.path,"libfuzzer_inputs")
+
       if(!dir.exists(input_dir)) {
         dir.create(input_dir,showWarnings = FALSE)
       }
@@ -69,11 +72,13 @@ deepstate_pkg_create_LibFuzzer<-function(path){
       file.create(makefile.libFuzz,recursive=TRUE)
       cat(makefile_lines, file=makefile.libFuzz, sep="\n")
       compile_line <-paste0("rm -f *.o && make -f ",makefile.libFuzz)
+      execution_line <- paste0("cd ",libfuzzer.fun.path," && ./",basename(executable))
+      if(exists_flag == 1){
       print(compile_line)
       system(compile_line)
-      execution_line <- paste0("cd ",libfuzzer.fun.path," && ./",basename(executable))
       print(execution_line)
       system(execution_line)
+      }
     }
   }
 

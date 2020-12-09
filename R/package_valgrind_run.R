@@ -1,5 +1,8 @@
 valgrind_afl_test <- function(pkg.tar.gz){
+ #install.packages(setdiff(basename(pkg.tar.gz), rownames(installed.packages())))
+  #install.packages(basename(pkg.tar.gz))
   #system(paste0("R CMD INSTALL ",basename(pkg.tar.gz)))
+  if(length(setdiff(basename(pkg.tar.gz), rownames(installed.packages()))) == 0){
     testfiles.vec <- Sys.glob(file.path(pkg.tar.gz,"inst/testfiles/*"))
     test_path <- file.path(pkg.tar.gz,"inst/testfiles")
     functions.list <-  RcppDeepState::deepstate_get_function_body(pkg.tar.gz)
@@ -23,4 +26,4 @@ for(utime in times){
 }
 }
 }
-
+}
